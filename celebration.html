@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ختمة مباركة</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: "Amiri", "Traditional Arabic", serif;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  /* النجوم: مخفية بالبداية */
+  canvas#stars {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    display: none;
+  }
+
+  /* شاشة البداية */
+  #startScreen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    z-index: 10;
+    padding: 24px;
+  }
+
+  #bismillah {
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    color: #d4af37;
+    text-shadow: 0 0 18px rgba(212,175,55,.35);
+    margin-bottom: 28px;
+  }
+
+  #startBtn {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,.8);
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: transform .2s ease, background .2s ease;
+  }
+
+  #startBtn:active {
+    transform: scale(.98);
+  }
+
+  #startBtn:hover {
+    background: rgba(255,255,255,.10);
+  }
+
+  /* المحتوى */
+  #main {
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+    padding: 20px 16px 30px;
+  }
+
+  #main.show {
+    opacity: 1;
+  }
+
+  #quran {
+    font-size: clamp(3.5rem, 10vw, 6rem);
+    line-height: 1;
+    margin-top: 10px;
+    margin-bottom: 12px;
+  }
+
+  #box {
+    width: min(92vw, 700px);
+    margin: 18px auto 16px;
+    border: 1px solid rgba(212,175,55,.75);
+    border-radius: 22px;
+    padding: 22px 18px;
+    background: rgba(255,255,255,.03);
+    box-shadow: 0 0 30px rgba(212,175,55,.08);
+    color: #f5e6c8;
+    font-size: clamp(1.15rem, 3.5vw, 1.8rem);
+    line-height: 1.7;
+  }
+
+  #introText {
+    width: min(92vw, 760px);
+    margin: 14px auto 0;
+    font-size: clamp(1.55rem, 5vw, 2.6rem);
+    line-height: 1.45;
+    color: #fff;
+    transition: opacity 1s ease;
+  }
+
+  #msg {
+    width: min(92vw, 760px);
+    margin: 20px auto 0;
+    color: #e0c98d;
+    font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+    line-height: 1.78;
+    white-space: normal;
+    text-wrap: pretty;
+    min-height: 260px;
+  }
+
+  #endScreen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    transition: opacity 2s ease;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #endScreen.show {
+    opacity: 1;
+  }
+
+  @media (max-width: 600px) {
+    #box {
+      padding: 18px 14px;
+      border-radius: 18px;
+    }
+
+    #msg {
+      min-height: 220px;
+    }
+  }
+</style>
+</head>
+
+<body>
+  <canvas id="stars"></canvas>
+
+  <div id="startScreen">
+    <div id="bismillah">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</div>
+    <button id="startBtn" type="button">✨ اضغط للمتابعة ✨</button>
+  </div>
+
+  <div id="endScreen"></div>
+
+  <audio id="audio" src="nasheed.mp3" preload="auto"></audio>
+
+  <div id="main">
+    <div id="quran">📖</div>
+
+    <div id="box">
+      تهنئة من أنس محمد الدحدوح<br>
+      إلى محمود يحيى الدحدوح<br>
+      بمناسبة ختم القرآن الكريم
+    </div>
+
+    <div id="introText">
+      مبارك لك يا محمود يحيى الدحدوح<br>
+      حافظ كتاب الله تعالى
+    </div>
+
+    <div id="msg"></div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("stars");
+  const ctx = canvas.getContext("2d");
+
+  const startScreen = document.getElementById("startScreen");
+  const startBtn = document.getElementById("startBtn");
+  const main = document.getElementById("main");
+  const introText = document.getElementById("introText");
+  const msg = document.getElementById("msg");
+  const audio = document.getElementById("audio");
+  const endScreen = document.getElementById("endScreen");
+
+  let stars = [];
+  let starsRunning = false;
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function createStars() {
+    stars = [];
+    const count = Math.min(420, Math.floor((window.innerWidth * window.innerHeight) / 3500));
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 1.4 + 0.3,
+        speed: Math.random() * 0.45 + 0.12
+      });
+    }
+  }
+
+  function drawStars() {
+    if (!starsRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const s of stars) {
+      s.y += s.speed;
+      if (s.y > window.innerHeight) {
+        s.y = -2;
+        s.x = Math.random() * window.innerWidth;
+      }
+      ctx.fillStyle = "#d4af37";
+      ctx.fillRect(s.x, s.y, s.size, s.size);
+    }
+
+    requestAnimationFrame(drawStars);
+  }
+
+  function startStars() {
+    if (starsRunning) return;
+    starsRunning = true;
+    canvas.style.display = "block";
+    resizeCanvas();
+    createStars();
+    drawStars();
+  }
+
+  function typeWriter(text, el) {
+    el.innerHTML = "";
+    let i = 0;
+    const speed = 35000 / text.length;
+
+    function tick() {
+      if (i < text.length) {
+        const ch = text[i];
+        if (ch === "\n") {
+          el.innerHTML += "<br>";
+        } else {
+          el.innerHTML += ch;
+        }
+        i++;
+        setTimeout(tick, speed);
+      }
+    }
+
+    tick();
+  }
+
+  function fadeOutAudio(aud, duration = 4000) {
+    const steps = 80;
+    const stepTime = duration / steps;
+    const delta = aud.volume / steps;
+
+    const timer = setInterval(() => {
+      if (aud.volume > delta) {
+        aud.volume = Math.max(0, aud.volume - delta);
+      } else {
+        aud.volume = 0;
+        aud.pause();
+        clearInterval(timer);
+      }
+    }, stepTime);
+  }
+
+  resizeCanvas();
+  createStars();
+
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    createStars();
+  });
+
+  const message = `ستة عشر ربيعاً… وقلبك أصبح بيتاً لكلام الله.
+رحلة لم تكن سهلة… لكنها كانت عظيمة.
+أيام من الصبر… ولكنك استمريت.
+حتى وصلت.
+
+واليوم…
+هذه بداية طريق النور.
+
+نسأل الله أن يجعلك من أهل القرآن،
+ويرفعك به درجات.`;
+
+  startBtn.addEventListener("click", () => {
+    startScreen.style.display = "none";
+    main.classList.add("show");
+
+    startStars();
+
+    audio.volume = 1;
+    audio.play().catch(() => {});
+
+    setTimeout(() => {
+      introText.style.opacity = "0";
+
+      setTimeout(() => {
+        introText.style.display = "none";
+        typeWriter(message, msg);
+      }, 1000);
+    }, 15000);
+
+    setTimeout(() => {
+      endScreen.classList.add("show");
+      fadeOutAudio(audio, 4000);
+    }, 60000);
+  });
+});
+</script>
+</body>
+</html>
